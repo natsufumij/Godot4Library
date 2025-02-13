@@ -252,17 +252,16 @@ func 创建动画(json,k,s):
 				
 				var 变换帧 = g["translateFrame"]
 				#变换帧.reverse()# 倒序
-				var 末尾零帧 = 变换帧.pop_back()
-				变换帧.push_front(末尾零帧)
+				#var 末尾零帧 = 变换帧.pop_back()
+				#变换帧.push_front(末尾零帧)
 				var 骨路径 =  str(node_2d.get_path_to(s[骨名])) + ":position"
 				var track_index = animation.add_track(Animation.TYPE_VALUE)# 添加轨道
 				animation.track_set_path(track_index, 骨路径)
+
+				处理动画帧(变换帧,帧数)
+
 				var 延迟 = 0.0
 				for _t in 变换帧:
-					if not _t.has("duration"):
-						延迟 += 1.0/帧数
-					else:
-						延迟 += _t["duration"]/帧数
 					var 变换值 = Vector2.ZERO
 					if _t.has("x"):
 						变换值.x = 原始变换.x + _t["x"]
@@ -272,32 +271,43 @@ func 创建动画(json,k,s):
 						变换值.y = 原始变换.y + _t["y"]
 					else:
 						变换值.y = 原始变换.y
-					animation.track_insert_key(track_index,延迟, 变换值)
+					animation.track_insert_key(track_index,_t['time'], 变换值)
 			if g.has("rotateFrame"):
 				# 获取当前骨骼的旋转值，单位度数
 				var 原始旋转值 = s[骨名].rotation_degrees
 				
 				var 旋转帧 = g["rotateFrame"]
 				#旋转帧.reverse()# 倒序
-				var 末尾零帧 = 旋转帧.pop_back()
-				旋转帧.push_front(末尾零帧)
+				#var 末尾零帧 = 旋转帧.pop_back()
+				#旋转帧.push_front(末尾零帧)
 				var 骨路径 =  str(node_2d.get_path_to(s[骨名])) + ":rotation"
 				var track_index = animation.add_track(Animation.TYPE_VALUE)# 添加轨道
 				animation.track_set_path(track_index, 骨路径)
+				
+				处理动画帧(旋转帧,帧数)
+
 				var 延迟 = 0.0
 				for _r in 旋转帧:
-					if not _r.has("duration"):
-						延迟 += 1.0/帧数
-					else:
-						延迟 += _r["duration"]/帧数
 					var 旋转值 = 0
 					if _r.has("rotate"):
 						旋转值 = 原始旋转值 + _r["rotate"]
 					else:
 						旋转值 = 原始旋转值
-					
-					animation.track_insert_key(track_index,延迟, deg_to_rad(旋转值))
+					animation.track_insert_key(track_index,_r['time'], deg_to_rad(旋转值))
 	
 		al.add_animation(动画名,animation)
 	var anim_library_name = json.data['name']
 	animplay.add_animation_library(anim_library_name,al)
+
+# 将各个动画帧的具体时刻重新计算
+func 处理动画帧(变化帧,帧数):
+	var time = 0
+	var index = 0
+	for _t in 变化帧:
+		var now_du = _t['duration'] if _t.has('duration') else 0
+		if index==0:
+			_t['time'] = 0.0
+		else:
+			_t['time'] = time
+		time += now_du/帧数
+		index+=1
